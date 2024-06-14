@@ -1,0 +1,49 @@
+name: Update log.txt
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+
+jobs:
+  update-file:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Fetch log.txt from GitLab
+      run: |
+        curl -o log.txt https://gitlab.com/tvtg/vip/-/raw/main/log.txt
+
+    - name: Check if 123.txt exists
+      run: |
+        if [ ! -f 123.txt ]; then
+          touch 123.txt
+        fi
+
+    - name: Update 123.txt
+      id: update_file
+      run: |
+        diff -q log.txt 123.txt || cat log.txt > 123.txt
+
+    - name: Commit and push changes
+      if: steps.update_file.outputs.file_changed == 'true'
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add 123.txt
+        git commit -m 'Update 123.txt from log.txt'
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Check if file changed
+      id: check_changes
+      run: |
+        git diff --exit-code 123.txt > /dev/null
+        if [ $? -ne 0 ]; then
+          echo "::set-output name=file_changed::true"
+        else
+          echo "::set-output name=file_changed::false"
+        fi
