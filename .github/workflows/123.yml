@@ -17,16 +17,20 @@ jobs:
       run: |
         curl -o log.txt https://gitlab.com/tvtg/vip/-/raw/main/log.txt
 
-    - name: Check if 123.txt exists
-      run: |
-        if [ ! -f 123.txt ]; then
-          touch 123.txt
-        fi
-
-    - name: Update 123.txt
+    - name: Check if 123.txt exists and update it
       id: update_file
       run: |
-        diff -q log.txt 123.txt || cat log.txt > 123.txt
+        if [ -f 123.txt ]; then
+          if ! diff -q log.txt 123.txt; then
+            cat log.txt > 123.txt
+            echo "::set-output name=file_changed::true"
+          else
+            echo "::set-output name=file_changed::false"
+          fi
+        else
+          mv log.txt 123.txt
+          echo "::set-output name=file_changed::true"
+        fi
 
     - name: Commit and push changes
       if: steps.update_file.outputs.file_changed == 'true'
@@ -38,13 +42,3 @@ jobs:
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Check if file changed
-      id: check_changes
-      run: |
-        git diff --exit-code 123.txt > /dev/null
-        if [ $? -ne 0 ]; then
-          echo "::set-output name=file_changed::true"
-        else
-          echo "::set-output name=file_changed::false"
-        fi
