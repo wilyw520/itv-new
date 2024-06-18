@@ -1,0 +1,20 @@
+name: Update Rice.txt
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+jobs:
+  update-rice-txt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if file exists
+        run: |
+          if [! -f rice.txt ]; then
+            touch rice.txt
+          fi
+      - name: Fetch content and update file
+        run: |
+          curl https://www.xn--sss604efuw.com/tv > fetched_content.txt
+          cat fetched_content.txt >> rice.txt
+          rm fetched_content.txt
